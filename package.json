@@ -1,0 +1,17 @@
+{
+  "name": "videoascii",
+  "version": "0.0.1",
+  "description": "HTML5 ASCII video player",
+  "main": "build/videoascii.js",
+  "scripts": {
+    "minify": "gulp compile",
+    "test": "gulp test"
+  },
+  "author": "Eben Packwood",
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "^3.6.2",
+    "gulp-closure-compiler": "^0.2.1",
+    "gulp-jshint": "^1.6.1"
+  }
+}
