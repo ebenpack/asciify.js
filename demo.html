@@ -13,7 +13,13 @@
 
     <script src="src/videoascii.js"></script>
     <script>
-        videoascii('canvas', 'video', 500);
+        videoascii({
+            canvas: document.getElementById('canvas'),
+            video: document.getElementById('video'),
+            output_width: 600,
+            font_size: 12,
+            monochrome: false
+        });
     </script>
 </body>
 </html>

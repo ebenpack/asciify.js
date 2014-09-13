@@ -1,4 +1,10 @@
-function videoascii(canvas_id, video_id, output_width, font_size, monochrome){
+function videoascii(options){
+    var canvas = options.canvas;
+    var ctx = canvas.getContext('2d');
+    var video = options.video;
+    var output_width = options.output_width;
+    var font_size = (options.font_size === undefined) ? 12 : options.font_size;
+    var monochrome = (options.monochrome === undefined) ? true : options.monochrome;
 
     // Characters from 'darkest' to 'lightest'
     var ascii_luminance_map = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft\/|()1{}[]?-_+~<>i!lI;:,\"^`\'. ";
@@ -6,19 +12,13 @@ function videoascii(canvas_id, video_id, output_width, font_size, monochrome){
     // ".:*IVFNM"
     // " .'`,^:" + '";~-_+<>i!lI?/|()1{}[]rcvunxzjftLCJUYXZO0Qoahkbdpqwm*WMB8&%$#@
 
-    var pixels_per_char = [7,15];
-
     var width, height, image_data, ascii_data, output_char_height,
         output_char_width, ascii_array, aspect_ratio, output_height,
-        input_block_width, input_block_height, output_block_width, output_block_height;
-    var canvas = document.getElementById(canvas_id);
-    var ctx = canvas.getContext('2d');
+        input_block_width, input_block_height, output_block_width, output_block_height,
+        font_width, font_height;
+
     var buffer_canvas = document.createElement('canvas');
     var buffer_ctx = buffer_canvas.getContext('2d');
-    var video = document.getElementById(video_id);
-    var monochrome = (monochrome === undefined) ? true : monochrome;
-
-    ctx.font = "20pt Courier";
 
     // TODO: use measureText to determine pixels_per_char
     //fillText() //Draws the specified text using the text style specified by the font attribute, 
@@ -30,18 +30,22 @@ function videoascii(canvas_id, video_id, output_width, font_size, monochrome){
     // Given output width, and output 'resolution', calculate block size(?)
 
     video.addEventListener('loadeddata', function(){
+        ctx.font = font_size + "pt Courier";
         width = Math.floor(video.getBoundingClientRect().width);
         height = Math.floor(video.getBoundingClientRect().height);
+        output_width = (output_width === undefined) ? width : output_width;
         aspect_ratio = width / height;
         output_height = Math.floor(output_width / aspect_ratio);
+        font_width = Math.round(ctx.measureText('#').width);
+        font_height = font_size;
         canvas.width = output_width;
         canvas.height = output_height;
         buffer_canvas.width = width;
         buffer_canvas.height = height;
         image_data = buffer_ctx.getImageData(0,0,width,height);
         ascii_data = buffer_ctx.getImageData(0,0,width,height);
-        output_char_height = Math.floor(output_height / pixels_per_char[1]);
-        output_char_width = Math.floor(output_width / pixels_per_char[0]);
+        output_char_height = Math.floor(output_height / font_height);
+        output_char_width = Math.floor(output_width / font_width);
         window.requestAnimationFrame(update);
     });
 
@@ -53,26 +57,33 @@ function videoascii(canvas_id, video_id, output_width, font_size, monochrome){
         // (R+R+B+G+G+G)/6
     }
 
-    function getPixel(x, y, img){
-        var index = (x + y * img.width) * 4;
-        var r = img.data[index];
-        var g =img.data[index+1];
-        var b = img.data[index+2];
-        return {'r': r, 'g':g, 'b':b};
-    }
+    function asciify(raw_imageData, canvas_ctx, font_width, font_height){
+        var input_width = raw_imageData.width;
+        var input_height = raw_imageData.height;
+        var output_width = canvas.width;
+        var output_height = canvas.height;
 
-    function asciify(raw_imageData, block_size){
+        var ratio = input_width / output_width;
+        var input_sample_width = Math.floor(font_width * ratio);
+        var input_sample_height = Math.floor(font_height * ratio);
+
         var image_data = raw_imageData.data;
-        var img_width = raw_imageData.width;
-        for (var x=0, xlen=raw_imageData.width; x<xlen; x+=block_size*4){
-            for (var y=0, ylen=raw_imageData.width; y<ylen; y+=block_size*4){
+
+        // For each ascii character in the output
+        for (var x = 0; x < output_width; x+= font_width){
+            for (var y = 0; y < output_height; y+= font_height){
+                // Determine location and size of corresponding
+                // rectangle in input
+
+                // Loop over input sample, determine average RGB
+                // and luminance values
                 var block_luminance_total = 0;
                 var red_tot = 0;
                 var green_tot = 0;
                 var blue_tot = 0;
-                for (var x2 = 0; x2<block_size*4; x2+=4){
-                    for (var y2 = 0; y2<block_size*4; y2+=4){
-                        var index = ((x+x2) + ((y+y2) * img_width)) * 4;
+                for (var x2=0; x2<input_sample_width; x2++){
+                    for (var y2=0; y2<input_sample_height; y2++){
+                        var index = ((Math.round(x*ratio)+x2) + ((Math.round(y*ratio)+y2) * input_width)) * 4;
                         var r = image_data[index];
                         var g = image_data[index+1];
                         var b = image_data[index+2];
@@ -80,19 +91,20 @@ function videoascii(canvas_id, video_id, output_width, font_size, monochrome){
                         green_tot += g;
                         blue_tot += b;
                         block_luminance_total += luminance(r, g, b);
-                    } 
+                    }
                 }
-                var block_luminance_avg = block_luminance_total / (block_size * block_size);
+                var area = input_sample_width * input_sample_height;
+                var block_luminance_avg = block_luminance_total / area;
                 var map_length = ascii_luminance_map.length;
                 var idx = Math.floor((map_length - 1) * block_luminance_avg);
                 if (!monochrome){
-                    var r = Math.floor(red_tot / (block_size * block_size))
-                    var g = Math.floor(green_tot / (block_size * block_size))
-                    var b = Math.floor(blue_tot / (block_size * block_size))
-                    ctx.fillStyle = "rgb(" + r +"," +g +","+b + ")";
+                    var r = Math.floor(red_tot / area)
+                    var g = Math.floor(green_tot / area)
+                    var b = Math.floor(blue_tot / area)
+                    canvas_ctx.fillStyle = "rgb(" + r +"," +g +","+b + ")";
                 }
                 var character = ascii_luminance_map[idx];
-                ctx.fillText(character, x, y);
+                canvas_ctx.fillText(character, x, y);
             }
         }
     }
@@ -105,7 +117,8 @@ function videoascii(canvas_id, video_id, output_width, font_size, monochrome){
         buffer_ctx.drawImage(video,0,0);
         image_data = buffer_ctx.getImageData(0,0,width,height);
         ctx.clearRect(0, 0, output_width, output_height);
-        asciify(image_data, 2);
+        ctx.font = font_size + "pt Courier";
+        asciify(image_data, ctx, font_width, font_height);
         window.requestAnimationFrame(update);
     }
 }
