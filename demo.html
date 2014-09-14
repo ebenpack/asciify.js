@@ -6,79 +6,61 @@
 </head>
 <body>
     
-    <canvas id="canvas"></canvas>
-    <video id="video" controls>
-        <source src='foo.webm' type='video/webm'>
-    </video>
+    <canvas id="canvas" width="300" height="300"></canvas>
 
-    <script src="src/asciify.js"></script>
+    <script src="build/asciify.js"></script>
     <script>
-        function videoascii(options){
-            var canvas = options.canvas;
+        (function(){
+            var canvas = document.getElementById('canvas');
             var ctx = canvas.getContext('2d');
-            var video = options.video;
-            var output_width = options.output_width;
-            var font_size = (options.font_size === undefined) ? 12 : options.font_size;
-            var monochrome = (options.monochrome === undefined) ? true : options.monochrome;
 
-            var width, height, image_data, ascii_data, output_char_height,
-                output_char_width, ascii_array, aspect_ratio, output_height,
-                input_block_width, input_block_height, output_block_width, output_block_height,
-                font_width, font_height;
+            // Prepare canvas and display instruction
+            canvas.style.border = "4px dashed gray";
+            ctx.textAlign="center"; 
+            ctx.font="14pt Arial"; 
+            ctx.fillText("Drop image files here to asciify",150,150); 
 
-            var buffer_canvas = document.createElement('canvas');
-            var buffer_ctx = buffer_canvas.getContext('2d');
+            function make_ascii(img){
+                // Draw img to offscreen canvas in order to
+                // get imageData array.
+                canvas.width = img.width;
+                canvas.height = img.height;
+                var canvas2 = document.createElement('canvas');
+                canvas2.width = img.width
+                canvas2.height = img.height
+                var ctx2 = canvas2.getContext('2d');
+                ctx2.drawImage(img, 0, 0 );
+                var imgData = ctx2.getImageData(0, 0, img.width, img.height);
 
-            // TODO: use measureText to determine pixels_per_char
-            //fillText() //Draws the specified text using the text style specified by the font attribute, 
-            // ctx.measureText() // Returns an object containing the width, in pixels, that the specified text will be when drawn in the current text style.
-            // ctx.mozPathText() //Adds the strokes from the specified text to the current path.
-            // strokeText() //Strokes the specified text using the text style specified by the font attribute, t
-
-            // Initialization
-            // Given output width, and output 'resolution', calculate block size(?)
-
-            video.addEventListener('loadeddata', function(){
-                ctx.font = font_size + "pt Courier";
-                width = Math.floor(video.getBoundingClientRect().width);
-                height = Math.floor(video.getBoundingClientRect().height);
-                output_width = (output_width === undefined) ? width : output_width;
-                aspect_ratio = width / height;
-                output_height = Math.floor(output_width / aspect_ratio);
-                font_width = Math.round(ctx.measureText('W').width);
-                font_height = font_size;
-                canvas.width = output_width;
-                canvas.height = output_height;
-                buffer_canvas.width = width;
-                buffer_canvas.height = height;
-                image_data = buffer_ctx.getImageData(0,0,width,height);
-                ascii_data = buffer_ctx.getImageData(0,0,width,height);
-                output_char_height = Math.floor(output_height / font_height);
-                output_char_width = Math.floor(output_width / font_width);
-                window.requestAnimationFrame(update);
-            });
-
-
-            function update(){
-                if (video.paused || video.ended){
-                    window.requestAnimationFrame(update);
-                    return;
-                }
-                buffer_ctx.drawImage(video,0,0);
-                image_data = buffer_ctx.getImageData(0,0,width,height);
-                ctx.clearRect(0, 0, output_width, output_height);
-                ctx.font = font_size + "pt Courier";
-                asciify(image_data, ctx, font_width, font_height, monochrome);
-                window.requestAnimationFrame(update);
+                // Clear canvas and draw asciified image
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                asciify(imgData, canvas, 8, false);
             }
-        }
-        videoascii({
-            canvas: document.getElementById('canvas'),
-            video: document.getElementById('video'),
-            // output_width: 600,
-            font_size: 12,
-            monochrome: false
-        });
+
+            // Register canvas drag 'n' drop handler
+            canvas.addEventListener("dragover", function (e) {
+                e.preventDefault();
+            }, false);
+            canvas.addEventListener("drop", function (e) {
+                var files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    var file = files[0];
+                    if (typeof FileReader !== "undefined" && file.type.indexOf("image") != -1) {
+                        var reader = new FileReader();
+                        reader.onload = function (evt) {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            img.src = evt.target.result;
+                            img.onload = function(e){
+                                make_ascii(img);
+                            }
+                        };
+                    reader.readAsDataURL(file);
+                    }
+                }
+                evt.preventDefault();
+            }, false);  
+        })()
     </script>
 </body>
 </html>
