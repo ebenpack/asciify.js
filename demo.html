@@ -13,6 +13,7 @@
         (function(){
             var canvas = document.getElementById('canvas');
             var ctx = canvas.getContext('2d');
+            var img = document.createElement('img');
 
             // Prepare canvas and display instruction
             canvas.style.border = "4px dashed gray";
@@ -25,6 +26,7 @@
                 // get imageData array.
                 canvas.width = img.width;
                 canvas.height = img.height;
+                canvas.style.border = "";
                 var canvas2 = document.createElement('canvas');
                 canvas2.width = img.width
                 canvas2.height = img.height
@@ -58,7 +60,7 @@
                     reader.readAsDataURL(file);
                     }
                 }
-                evt.preventDefault();
+                e.preventDefault();
             }, false);  
         })()
     </script>
