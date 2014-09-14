@@ -2,7 +2,7 @@
   "name": "asciify",
   "version": "0.0.1",
   "description": "Renders ImageData as ASCII text.",
-  "main": "build/asciify.js",
+  "main": "src/asciify.js",
   "scripts": {
     "minify": "gulp compile",
     "test": "gulp test"
