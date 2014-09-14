@@ -1,8 +1,8 @@
 {
-  "name": "videoascii",
+  "name": "asciify",
   "version": "0.0.1",
-  "description": "HTML5 ASCII video player",
-  "main": "build/videoascii.js",
+  "description": "Renders ImageData as ASCII text.",
+  "main": "build/asciify.js",
   "scripts": {
     "minify": "gulp compile",
     "test": "gulp test"

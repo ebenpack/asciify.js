@@ -1,3 +1,3 @@
-# VideoASCII #
+# ASCIIfy #
 
-HTML5 ASCII video player 
+Renders ImageData as ASCII text.
