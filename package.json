@@ -3,16 +3,8 @@
   "version": "0.0.1",
   "description": "Renders ImageData as ASCII text.",
   "main": "src/asciify.js",
-  "scripts": {
-    "minify": "gulp compile",
-    "test": "gulp test"
-  },
   "author": "Eben Packwood",
   "license": "MIT",
   "devDependencies": {
-    "gulp": "^3.6.2",
-    "gulp-browserify": "^0.5.0",
-    "gulp-closure-compiler": "^0.2.1",
-    "gulp-jshint": "^1.6.1"
   }
 }
